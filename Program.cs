@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 
@@ -27,19 +28,23 @@ namespace pepino_cs
             return new Uri(uriSb.ToString());
         }
 
-        public async void SaveEntry<T>(T instance, Guid id, HttpClient httpClient) {
-            var uri = dbConfig.GetURIForEntry(id.ToString());
-            var jsonData = new HttpStringContent(JsonSerializer.Serialize(instance));
-            HttpResponseMessage res = await client.PostAsync(uri, jsonData);
-            var resBody = await res.Content.ReadAsStringAsync();
-            if (res.StatusCode == HttpStatusCode.OK) {
-                return;
+        public async Task<string> SaveEntry<T>(T instance, Guid id, HttpClient httpClient) {
+            try {
+                var uri = this.GetURIForEntry(id.ToString());
+                var jsonData = new StringContent(JsonSerializer.Serialize(instance), Encoding.UTF8);
+                HttpResponseMessage res = await httpClient.PostAsync(uri, jsonData);
+                var resBody = await res.Content.ReadAsStringAsync();
+                if (res.StatusCode == HttpStatusCode.OK) {
+                    return "";
+                }
+                var msg = "There was an error on the Database:@@httpStatus={#1}";
+                msg = msg + "@@" + resBody;
+                msg = msg.Replace("@@", Environment.NewLine);
+                msg = msg.Replace("{#1}", res.StatusCode.ToString());
+                throw new Exception(msg);
+            } catch (Exception e) {
+                return e.ToString();
             }
-            var msg = "There was an error on the Database:@@httpStatus={#1}";
-            msg = msg + "@@" + resBody;
-            msg = msg.Replace("@@", Environment.NewLine);
-            msg = msg.Replace("{#1}", res.StatusCode.ToString());
-            throw new Exception(msg);
         }
     }
 
@@ -51,7 +56,7 @@ namespace pepino_cs
         public string Contents { get; set; }
 
         public Note(string contents, string title) {
-            this.CreationTime = DateTime.UtcNow();
+            this.CreationTime = DateTime.UtcNow;
             this.LastModified = this.CreationTime;
             this.Id = Guid.NewGuid();
             this.Contents = contents;
@@ -59,13 +64,13 @@ namespace pepino_cs
         }
 
         public void Modify(string newContents, string newTitle) {
-            this.LastModified = DateTime.UtcNow();
+            this.LastModified = DateTime.UtcNow;
             this.Title = newTitle;
             this.Contents = newContents;
         }
 
-        public async void Save(DBConfig dbConfig, HttpClient client) {
-            dbConfig.SaveEntry<Note>(this, this.Id, client);
+        public async Task<string> Save(DBConfig dbConfig, HttpClient client) {
+            return await dbConfig.SaveEntry<Note>(this, this.Id, client);
         }
     }
 
@@ -108,6 +113,7 @@ namespace pepino_cs
                         var noteTitle = Console.ReadLine().Trim();
                         var noteContents = ReadUntilFinish();
                         var note = new Note(noteContents, noteTitle);
+                        await note.Save(dbConfig, client);
                     } catch (Exception e) {
                         Console.WriteLine(e);
                     }
