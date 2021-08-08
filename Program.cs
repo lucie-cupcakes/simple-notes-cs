@@ -45,8 +45,8 @@ namespace SimpleNotes {
 
             bool exit = false;
             Console.WriteLine("Welcome to the Notes program!");
+            Console.WriteLine("TIP: write help for the command list.");
             while (!exit) {
-                Console.WriteLine(cmdHelp);
                 Console.Write("Notes> ");
                 string cmd = Console.ReadLine();
                 if (cmd.StartsWith("new")) {
@@ -100,7 +100,8 @@ namespace SimpleNotes {
                     } else {
                         Console.WriteLine("Usage: print <Guid>");
                     }
-
+                } else if (cmd.StartsWith("help")) {
+                    Console.WriteLine(cmdHelp);
                 } else if (cmd.StartsWith("exit")) {
                     exit = true;
                 } else {
