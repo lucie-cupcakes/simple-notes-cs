@@ -30,8 +30,9 @@ namespace SimpleNotes {
             this.Contents = newContents;
         }
 
-        public async Task<string> Save(DBConfig dbConfig, HttpClient client) {
-            return await dbConfig.SaveEntry<Note>(this, this.Id, client);
+        public async Task<string> Save(PepinoDB.Database db) {
+            var jsonBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(this));
+            var dbRes = await db.SaveEntry(this.Id.ToString(), jsonBytes);
         }
     }
 }
