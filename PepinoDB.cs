@@ -15,7 +15,7 @@ namespace PepinoDB {
         private string password;
         private string dbName;
 
-        public DatabaseManager(string url, string dbName, string password) {
+        public Database(string url, string dbName, string password) {
             this.url = url;
             this.dbName = dbName;
             this.password = password;
@@ -23,48 +23,40 @@ namespace PepinoDB {
 
         private Uri buildURIForEntry(string entryName) {
             var uriSb = new StringBuilder();
-            uriSb.Append(this.URL + "/?password=" + this.Password + "&db=");
-            uriSb.Append(this.DBName + "&entry=" + entryName);
+            uriSb.Append(this.url + "/?password=" + this.password + "&db=");
+            uriSb.Append(this.dbName + "&entry=" + entryName);
             return new Uri(uriSb.ToString());
         }
 
-        public async Task<Exception?> SaveEntry(string entryName, byte[] entryValue) {
-            try {
-                var httpClient = new HttpClient();
-                var uri = this.GetURIForEntry(entryName);
-                var httpData = new ByteArrayContent(entryValue);
-                HttpResponseMessage res = await httpClient.PostAsync(uri, httpData);
-                var resBody = await res.Content.ReadAsStringAsync();
-                if (res.StatusCode == HttpStatusCode.OK) {
-                    return null;
-                }
-                var msg = "There was an error on the Database:@@httpStatus={#1}";
-                msg = msg + "@@" + resBody;
-                msg = msg.Replace("@@", Environment.NewLine);
-                msg = msg.Replace("{#1}", res.StatusCode.ToString());
-                throw new Exception(msg);
-            } catch (Exception e) {
-                return e;
+        public async Task SaveEntry(string entryName, byte[] entryValue) {
+            var httpClient = new HttpClient();
+            var uri = this.buildURIForEntry(entryName);
+            var httpData = new ByteArrayContent(entryValue);
+            HttpResponseMessage res = await httpClient.PostAsync(uri, httpData);
+            var resBody = await res.Content.ReadAsStringAsync();
+            if (res.StatusCode == HttpStatusCode.OK) {
+                return;
             }
+            var msg = "There was an error on the Database:@@httpStatus={#1}";
+            msg = msg + "@@" + resBody;
+            msg = msg.Replace("@@", Environment.NewLine);
+            msg = msg.Replace("{#1}", res.StatusCode.ToString());
+            throw new Exception(msg);
         }
 
-        public async Task<(byte[]?, Exception?)> LoadEntry(string entryName) {
-            try {
-                var httpClient = new HttpClient();
-                var uri = this.GetURIForEntry(entryName);
-                HttpResponseMessage res = await httpClient.GetAsync(uri);
-                var resBody = await res.Content.ReadAsByteArrayAsync()
-                if (res.StatusCode == HttpStatusCode.OK) {
-                    return (resBody, null);
-                }
-                var msg = "There was an error on the Database:@@httpStatus={#1}";
-                msg = msg + "@@" + resBody;
-                msg = msg.Replace("@@", Environment.NewLine);
-                msg = msg.Replace("{#1}", res.StatusCode.ToString());
-                throw new Exception(msg);
-            } catch (Exception e) {
-                return (null, e);
+        public async Task<byte[]> LoadEntry(string entryName) {
+            var httpClient = new HttpClient();
+            var uri = this.buildURIForEntry(entryName);
+            HttpResponseMessage res = await httpClient.GetAsync(uri);
+            var resBody = await res.Content.ReadAsByteArrayAsync();
+            if (res.StatusCode == HttpStatusCode.OK) {
+                return resBody;
             }
+            var msg = "There was an error on the Database:@@httpStatus={#1}";
+            msg = msg + "@@" + Encoding.UTF8.GetString(resBody);
+            msg = msg.Replace("@@", Environment.NewLine);
+            msg = msg.Replace("{#1}", res.StatusCode.ToString());
+            throw new Exception(msg);
         }
     }
 }
