@@ -30,6 +30,11 @@ namespace SimpleNotes {
             this.Contents = newContents;
         }
 
+        public static async Task<Note> Load(PepinoDB.Database db, Guid id) {
+            byte[] jsonBytes = await db.LoadEntry(id.ToString());
+            return JsonSerializer.Deserialize<Note>(jsonBytes);
+        }
+
         public async Task Save(PepinoDB.Database db) {
             var jsonBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(this));
             await db.SaveEntry(this.Id.ToString(), jsonBytes);

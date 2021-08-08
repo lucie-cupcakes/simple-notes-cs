@@ -1,13 +1,19 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
+
 namespace SimpleNotes {
     class NoteList {
         public Dictionary<Guid, String> Value { get; set; }
+
+        public NoteList() {
+            this.Value = new Dictionary<Guid, String>();
+        }
 
         public static async Task<NoteList> Load(PepinoDB.Database db) {
             byte[] jsonBytes = await db.LoadEntry("List");

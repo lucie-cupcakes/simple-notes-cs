@@ -38,7 +38,7 @@ namespace SimpleNotes {
             NoteList noteList;
 
             try {
-                noteList = await NoteList.Load(dbHandle)
+                noteList = await NoteList.Load(dbHandle);
             } catch (Exception e) {
                 noteList = new NoteList();
             }
@@ -56,7 +56,7 @@ namespace SimpleNotes {
                     var note = new Note(noteContents, noteTitle);
                     try {
                         await note.Save(dbHandle);
-                        noteList[note.Id] = note.Title;
+                        noteList.Value[note.Id] = note.Title;
                         await noteList.Save(dbHandle);
                         Console.WriteLine("Note saved sucessfully!");
                     } catch(Exception e) {
@@ -64,14 +64,43 @@ namespace SimpleNotes {
                     }
                 } else if (cmd.StartsWith("del")) {
                     Console.WriteLine("TODO: Delete command");
+                    // To delete a registry you must find a way to make
+                    // and httpClient DELETE request. Insted of Get,Post.
                 } else if (cmd.StartsWith("mod")) {
                     Console.WriteLine("TODO: Modify command");
+                    // To modify a note basically copy the part of Load Note
+                    // in the print command, and call note.modify()
+                    // Don't forget to update the title inside noteList
+                    // And call note.Save() and noteList.Save()
                 } else if (cmd.StartsWith("list")) {
                     foreach (var kv in noteList.Value) {
                         Console.WriteLine(kv.Key.ToString() + "\t" + kv.Value);
                     }
                 } else if (cmd.StartsWith("print")) {
-                    Console.WriteLine("TODO: Print command");
+                    var cmdArr = cmd.Split("print", 2);
+                    if (cmdArr.Length == 2) {
+                        var guidStr = cmdArr[1].Trim();
+                        var guid = Guid.NewGuid();
+                        try {
+                            guid = new Guid(guidStr);
+                        } catch {}
+                        if (noteList.Value.ContainsKey(guid)) {
+                            try {
+                                var note = await Note.Load(dbHandle, guid);
+                                Console.WriteLine("Title:\t" + note.Title);
+                                Console.WriteLine("Creation Time:\t" + note.CreationTime.ToString());
+                                Console.WriteLine("Last Modified:\t" + note.LastModified.ToString());
+                                Console.WriteLine(Environment.NewLine + note.Contents);
+                            } catch (Exception e){
+                                Console.WriteLine(e.ToString());
+                            }
+                        } else {
+                            Console.WriteLine("error: note does not exists.");
+                        }
+                    } else {
+                        Console.WriteLine("Usage: print <Guid>");
+                    }
+
                 } else if (cmd.StartsWith("exit")) {
                     exit = true;
                 } else {
