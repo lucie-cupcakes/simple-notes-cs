@@ -58,5 +58,20 @@ namespace PepinoDB {
             msg = msg.Replace("{#1}", res.StatusCode.ToString());
             throw new Exception(msg);
         }
+
+        public async Task DeleteEntry(string entryName) {
+            var httpClient = new HttpClient();
+            var uri = this.buildURIForEntry(entryName);
+            HttpResponseMessage res = await httpClient.DeleteAsync(uri);
+            var resBody = await res.Content.ReadAsByteArrayAsync();
+            if (res.StatusCode == HttpStatusCode.OK) {
+                return;
+            }
+            var msg = "There was an error on the Database:@@httpStatus={#1}";
+            msg = msg + "@@" + Encoding.UTF8.GetString(resBody);
+            msg = msg.Replace("@@", Environment.NewLine);
+            msg = msg.Replace("{#1}", res.StatusCode.ToString());
+            throw new Exception(msg);
+        }
     }
 }

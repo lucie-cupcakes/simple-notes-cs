@@ -30,6 +30,15 @@ namespace SimpleNotes {
             this.Contents = newContents;
         }
 
+        public override string ToString() {
+            var sb = new StringBuilder();
+            sb.AppendLine("Title:\t" + this.Title);
+            sb.AppendLine("Creation time:\t" + this.CreationTime.ToString());
+            sb.AppendLine("Last modified:\t" + this.LastModified.ToString());
+            sb.AppendLine(Environment.NewLine + this.Contents);
+            return sb.ToString();
+        }
+
         public static async Task<Note> Load(PepinoDB.Database db, Guid id) {
             byte[] jsonBytes = await db.LoadEntry(id.ToString());
             return JsonSerializer.Deserialize<Note>(jsonBytes);

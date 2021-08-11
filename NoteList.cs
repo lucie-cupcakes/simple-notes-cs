@@ -15,6 +15,14 @@ namespace SimpleNotes {
             this.Value = new Dictionary<Guid, String>();
         }
 
+        public bool ContainsKey(String id) {
+            var guid = Guid.NewGuid();
+            try {
+                guid = new Guid(id);
+            } catch {}
+            return this.Value.ContainsKey(guid);
+        }
+
         public static async Task<NoteList> Load(PepinoDB.Database db) {
             byte[] jsonBytes = await db.LoadEntry("List");
             return JsonSerializer.Deserialize<NoteList>(jsonBytes);

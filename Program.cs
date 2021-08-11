@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -63,21 +64,7 @@ namespace SimpleNotes {
                         Console.WriteLine(e.ToString());
                     }
                 } else if (cmd.StartsWith("del")) {
-                    Console.WriteLine("TODO: Delete command");
-                    // To delete a registry you must find a way to make
-                    // and httpClient DELETE request. Insted of Get,Post.
-                } else if (cmd.StartsWith("mod")) {
-                    Console.WriteLine("TODO: Modify command");
-                    // To modify a note basically copy the part of Load Note
-                    // in the print command, and call note.modify()
-                    // Don't forget to update the title inside noteList
-                    // And call note.Save() and noteList.Save()
-                } else if (cmd.StartsWith("list")) {
-                    foreach (var kv in noteList.Value) {
-                        Console.WriteLine(kv.Key.ToString() + "\t" + kv.Value);
-                    }
-                } else if (cmd.StartsWith("print")) {
-                    var cmdArr = cmd.Split("print", 2);
+                    var cmdArr = cmd.Split("del", 2);
                     if (cmdArr.Length == 2) {
                         var guidStr = cmdArr[1].Trim();
                         var guid = Guid.NewGuid();
@@ -86,16 +73,64 @@ namespace SimpleNotes {
                         } catch {}
                         if (noteList.Value.ContainsKey(guid)) {
                             try {
-                                var note = await Note.Load(dbHandle, guid);
-                                Console.WriteLine("Title:\t" + note.Title);
-                                Console.WriteLine("Creation Time:\t" + note.CreationTime.ToString());
-                                Console.WriteLine("Last Modified:\t" + note.LastModified.ToString());
-                                Console.WriteLine(Environment.NewLine + note.Contents);
+                                await dbHandle.DeleteEntry(guidStr);
+                                if (!noteList.Value.Remove(guid)) {
+                                    throw new Exception("Cannot remove note from list.");
+                                }
+                                await noteList.Save(dbHandle);
                             } catch (Exception e){
                                 Console.WriteLine(e.ToString());
                             }
                         } else {
                             Console.WriteLine("error: note does not exists.");
+                        }
+                    } else {
+                        Console.WriteLine("Usage: del <Guid>");
+                    }
+                } else if (cmd.StartsWith("mod")) {
+                    var cmdArr = cmd.Split("mod", 2);
+                    try {
+                        if (cmdArr.Length == 2) {
+                            var guidStr = cmdArr[1].Trim();
+                            if (! noteList.ContainsKey(guidStr)) {
+                                throw new Exception("error: note does not exists.");
+                            }
+                            var guid = new Guid(guidStr);
+                            var note = await Note.Load(dbHandle, guid);
+                            Console.WriteLine(note.ToString());
+                            Console.Write("title: ");
+                            var noteTitle = Console.ReadLine().Trim();
+                            var noteContents = ReadUntilFinish();
+                            note.Modify(noteContents, noteTitle);
+                            await note.Save(dbHandle);
+                            noteList.Value[guid] = note.Title;
+                            await noteList.Save(dbHandle);
+                        } else {
+                            Console.WriteLine("Usage: mod <Guid>");
+                        }
+                    } catch(Exception e) {
+                        Console.WriteLine(e.ToString());
+                    }
+                } else if (cmd.StartsWith("list")) {
+                    if (noteList.Value.Keys.Count > 0) {
+                    foreach (var kv in noteList.Value) {
+                        Console.WriteLine(kv.Key.ToString() + "\t" + kv.Value);
+                    }
+                    } else {
+                        Console.WriteLine("There are not saved notes");
+                    }
+                } else if (cmd.StartsWith("print")) {
+                    var cmdArr = cmd.Split("print", 2);
+                    if (cmdArr.Length == 2) {
+                        var guidStr = cmdArr[1].Trim();
+                        try {
+                            if (! noteList.ContainsKey(guidStr)) {
+                                throw new Exception("error: note does not exists.");
+                            }
+                            var note = await Note.Load(dbHandle, new Guid(guidStr));
+                            Console.WriteLine(note.ToString());
+                        } catch (Exception e){
+                            Console.WriteLine(e.ToString());
                         }
                     } else {
                         Console.WriteLine("Usage: print <Guid>");
